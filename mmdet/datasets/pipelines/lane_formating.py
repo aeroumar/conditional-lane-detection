@@ -320,94 +320,90 @@ class CollectLane(Collect):
         mask_w = int(output_w // self.down_scale)
         hm_h = int(output_h // self.hm_down_scale)
         hm_w = int(output_w // self.hm_down_scale)
-        results['hm_shape'] = [hm_h, hm_w]
-        results['mask_shape'] = [mask_h, mask_w]
         ratio_hm_mask = self.down_scale / self.hm_down_scale
 
         # gt init
         gt_hm = np.zeros((1, hm_h, hm_w), np.float32)
         gt_masks = []
-
         # gt heatmap and ins of bank
-        gt_points = results['gt_points']
-        valid_gt = []
-        for pts in gt_points:
-            id_class = 1
+        # gt_points = results['gt_points']
+        # valid_gt = []
+        # for pts in gt_points:
+        #     id_class = 1
 
-            pts = convert_list(pts, self.down_scale)
-            pts = sorted(pts, key=cmp_to_key(lambda a, b: b[-1] - a[-1]))
-            pts = clamp_line(
-                pts, box=[0, 0, mask_w - 1, mask_h - 1], min_length=1)
-            if pts is not None and len(pts) > 1:
-                valid_gt.append([pts, id_class - 1])
+        #     pts = convert_list(pts, self.down_scale)
+        #     pts = sorted(pts, key=cmp_to_key(lambda a, b: b[-1] - a[-1]))
+        #     pts = clamp_line(
+        #         pts, box=[0, 0, mask_w - 1, mask_h - 1], min_length=1)
+        #     if pts is not None and len(pts) > 1:
+        #         valid_gt.append([pts, id_class - 1])
 
-        # draw gt_hm_lane
-        gt_hm_lane_ends = []
-        radius = []
-        for l in valid_gt:
-            label = l[1]
-            point = (l[0][0][0] * ratio_hm_mask, l[0][0][1] * ratio_hm_mask)
-            gt_hm_lane_ends.append([point, l[0]])
-        for i, p in enumerate(gt_hm_lane_ends):
-            r = self.radius
-            radius.append(r)
+        # # draw gt_hm_lane
+        # gt_hm_lane_ends = []
+        # radius = []
+        # for l in valid_gt:
+        #     label = l[1]
+        #     point = (l[0][0][0] * ratio_hm_mask, l[0][0][1] * ratio_hm_mask)
+        #     gt_hm_lane_ends.append([point, l[0]])
+        # for i, p in enumerate(gt_hm_lane_ends):
+        #     r = self.radius
+        #     radius.append(r)
 
-        if len(gt_hm_lane_ends) >= 2:
-            endpoints = [p[0] for p in gt_hm_lane_ends]
-            for j in range(len(endpoints)):
-                dis = min_dis_one_point(endpoints, j)
-                if dis < 1.5 * radius[j]:
-                    radius[j] = int(max(dis / 1.5, 1) + 0.49999)
-        for (end_point, line), r in zip(gt_hm_lane_ends, radius):
-            pos = np.zeros((mask_h), np.float32)
-            pos_mask = np.zeros((mask_h), np.float32)
-            pt_int = [int(end_point[0]), int(end_point[1])]
-            draw_umich_gaussian(gt_hm[0], pt_int, r)
-            line_array = np.array(line)
-            y_min, y_max = int(np.min(line_array[:, 1])), int(
-                np.max(line_array[:, 1]))
-            mask_points = select_mask_points(
-                pt_int, r, (hm_h, hm_w), max_sample=self.max_mask_sample)
-            reg = np.zeros((1, mask_h, mask_w), np.float32)
-            reg_mask = np.zeros((1, mask_h, mask_w), np.float32)
+        # if len(gt_hm_lane_ends) >= 2:
+        #     endpoints = [p[0] for p in gt_hm_lane_ends]
+        #     for j in range(len(endpoints)):
+        #         dis = min_dis_one_point(endpoints, j)
+        #         if dis < 1.5 * radius[j]:
+        #             radius[j] = int(max(dis / 1.5, 1) + 0.49999)
+        # for (end_point, line), r in zip(gt_hm_lane_ends, radius):
+        #     pos = np.zeros((mask_h), np.float32)
+        #     pos_mask = np.zeros((mask_h), np.float32)
+        #     pt_int = [int(end_point[0]), int(end_point[1])]
+        #     draw_umich_gaussian(gt_hm[0], pt_int, r)
+        #     line_array = np.array(line)
+        #     y_min, y_max = int(np.min(line_array[:, 1])), int(
+        #         np.max(line_array[:, 1]))
+        #     mask_points = select_mask_points(
+        #         pt_int, r, (hm_h, hm_w), max_sample=self.max_mask_sample)
+        #     reg = np.zeros((1, mask_h, mask_w), np.float32)
+        #     reg_mask = np.zeros((1, mask_h, mask_w), np.float32)
 
-            extended_line = extend_line(line)
-            line_array = np.array(line)
-            y_min, y_max = np.min(line_array[:, 1]), np.max(line_array[:, 1])
-            # regression
-            m = np.zeros((mask_h, mask_w), np.uint8)
-            lane_range = np.zeros((1, mask_h), np.int64)
-            line_array = np.array(line)
+        #     extended_line = extend_line(line)
+        #     line_array = np.array(line)
+        #     y_min, y_max = np.min(line_array[:, 1]), np.max(line_array[:, 1])
+        #     # regression
+        #     m = np.zeros((mask_h, mask_w), np.uint8)
+        #     lane_range = np.zeros((1, mask_h), np.int64)
+        #     line_array = np.array(line)
 
-            polygon = np.array(extended_line)
-            polygon_map = draw_label(
-                m, polygon, 1, 'line', width=self.line_width + 9) > 0
-            for y in range(polygon_map.shape[0]):
-                for x in np.where(polygon_map[y, :])[0]:
-                    reg_x, _ = get_line_intersection(x, y, line)
-                    # kps and kps_mask:
-                    if reg_x is not None:
-                        offset = reg_x - x
-                        reg[0, y, x] = offset
-                        if abs(offset) < 10:
-                            reg_mask[0, y, x] = 1
-                        if y >= y_min and y <= y_max:
-                            pos[y] = reg_x
-                            pos_mask[y] = 1
-                        lane_range[:, y] = 1
+        #     polygon = np.array(extended_line)
+        #     polygon_map = draw_label(
+        #         m, polygon, 1, 'line', width=self.line_width + 9) > 0
+        #     for y in range(polygon_map.shape[0]):
+        #         for x in np.where(polygon_map[y, :])[0]:
+        #             reg_x, _ = get_line_intersection(x, y, line)
+        #             # kps and kps_mask:
+        #             if reg_x is not None:
+        #                 offset = reg_x - x
+        #                 reg[0, y, x] = offset
+        #                 if abs(offset) < 10:
+        #                     reg_mask[0, y, x] = 1
+        #                 if y >= y_min and y <= y_max:
+        #                     pos[y] = reg_x
+        #                     pos_mask[y] = 1
+        #                 lane_range[:, y] = 1
 
-            gt_masks.append({
-                'reg': reg,
-                'reg_mask': reg_mask,
-                'points': mask_points,
-                'row': pos,
-                'row_mask': pos_mask,
-                'range': lane_range,
-                'label': 0
-            })
+        #     gt_masks.append({
+        #         'reg': reg,
+        #         'reg_mask': reg_mask,
+        #         'points': mask_points,
+        #         'row': pos,
+        #         'row_mask': pos_mask,
+        #         'range': lane_range,
+        #         'label': 0
+        #     })
 
-        results['gt_hm'] = DC(
-            to_tensor(gt_hm).float(), stack=True, pad_dims=None)
+        results['gt_hm'] = to_tensor(gt_hm).float()
         results['gt_masks'] = gt_masks
         results['down_scale'] = self.down_scale
         results['hm_down_scale'] = self.hm_down_scale
@@ -421,10 +417,12 @@ class CollectLane(Collect):
         if not valid:
             return None
         for key in self.meta_keys:
-            img_meta[key] = results[key]
+            try: img_meta[key] = results[key]
+            except: img_meta[key] = []
         data['img_metas'] = DC(img_meta, cpu_only=True)
         for key in self.keys:
-            data[key] = results[key]
+            try: data[key] = results[key]
+            except: data[key] = []
         return data
 
 
