@@ -31,6 +31,7 @@ class LaneEval(object):
             raise Exception('Format of lanes error.')
         if running_time > 200 or len(gt) + 2 < len(pred):
             return 0., 0., 1.
+        gt = [x_gts[:-1] for x_gts in gt]
         angles = [LaneEval.get_angle(np.array(x_gts), np.array(y_samples)) for x_gts in gt]
         threshs = [LaneEval.pixel_thresh / np.cos(angle) for angle in angles]
         line_accs = []

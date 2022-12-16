@@ -3,9 +3,7 @@
 """
 # global settings
 dataset_type = 'TuSimpleDataset'
-# data_root = "/disk1/zhouyang/dataset/tuSimple"
-# data_root = "/home/aerovect/Documents/tusimple"
-data_root = "/media/aerovect/T7/atl_del_tusimple_lane_dataset/left"
+data_root = "/media/aerovect/T7/data_collection/atl_del_processed/left_resized"
 test_mode = False
 mask_down_scale = 4
 hm_down_scale = 16
@@ -192,10 +190,7 @@ data = dict(
         type=dataset_type,
         data_root=data_root,
         data_list=[
-            # data_root + '/label_data_0313.json',
-            # data_root + '/label_data_0531.json',
-            # data_root + '/label_data_0601.json'
-            data_root.rsplit('/', 1)[0] + "/Lane_Annotations/labels/tusimple_atl_del_train.json"            
+            data_root + '/tusimple_atl_del_train.json'
         ],
         pipeline=train_pipeline,
         test_mode=False,
@@ -203,20 +198,14 @@ data = dict(
     val=dict(
         type=dataset_type,
         data_root=data_root,
-        data_list=[
-            # data_root + '/test_baseline.json'
-            data_root.rsplit('/', 1)[0] + "/Lane_Annotations/labels/tusimple_atl_del_val.json"                        
-        ],
+        data_list=[data_root + '/tusimple_atl_del_val.json'],
         pipeline=val_pipeline,
         test_mode=False,
     ),
     test=dict(
         type=dataset_type,
         data_root=data_root,
-        data_list=[
-            # data_root + '/test_label.json'
-            data_root.rsplit('/', 1)[0] + "/Lane_Annotations/labels/tusimple_atl_del_test.json"            
-        ],
+        data_list=[data_root + '/test_label.json'],
         test_suffix='.jpg',
         pipeline=val_pipeline,
         test_mode=True,
@@ -242,11 +231,11 @@ log_config = dict(
         dict(type='TextLoggerHook'),
     ])
 
-total_epochs = 200
+total_epochs = 35
 device_ids = "0,1"
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/tusimple/large-gray-masks-resumed-200'
+work_dir = './work_dirs/tusimple/large-copy'
 load_from = None
 resume_from = None
 workflow = [('train', 200), ('val', 1)]

@@ -3,8 +3,10 @@
 """
 # global settings
 dataset_type = 'TuSimpleDataset'
-data_root = "/disk1/zhouyang/dataset/tuSimple"
-test_mode = False
+# data_root = "/disk1/zhouyang/dataset/tuSimple"
+# data_root = "/home/aerovect/Documents/tusimple"
+data_root = "/media/aerovect/T7/atl_del_tusimple_lane_dataset/left"
+test_mode = True
 mask_down_scale = 4
 hm_down_scale = 16
 mask_size = (1, 80, 200)
@@ -69,7 +71,7 @@ model = dict(
         hm_idx=2,
         mask_idx=0,
         compute_locations_pre=True,
-        location_configs=dict(size=(batch_size, 1, 40, 100), device='cuda:0')),
+        location_configs=dict(size=(batch_size, 1, 80, 200), device='cuda:0')),
     loss_weights=dict(
         hm_weight=1,
         kps_weight=0.4,
@@ -78,7 +80,7 @@ model = dict(
     ),
 )
 
-train_compose = dict(bboxes=False, keypoints=True, masks=False)
+train_compose = dict(bboxes=False, keypoints=False, masks=False)
 
 # data pipeline settings
 train_al_pipeline = [
@@ -149,7 +151,7 @@ val_al_pipeline = [
 train_pipeline = [
     dict(type='albumentation', pipelines=train_al_pipeline),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='DefaultFormatBundle'),
+    dict(type='ImageToTensor', keys=['img']),
     dict(
         type='CollectLane',
         down_scale=mask_down_scale,
@@ -168,7 +170,7 @@ train_pipeline = [
 val_pipeline = [
     dict(type='albumentation', pipelines=val_al_pipeline),
     dict(type='Normalize', **img_norm_cfg),
-    dict(type='DefaultFormatBundle'),
+    dict(type='ImageToTensor', keys=['img']),
     dict(
         type='CollectLane',
         down_scale=mask_down_scale,
@@ -190,9 +192,10 @@ data = dict(
         type=dataset_type,
         data_root=data_root,
         data_list=[
-            data_root + '/label_data_0313.json',
-            data_root + '/label_data_0531.json',
-            data_root + '/label_data_0601.json'
+            # data_root + '/label_data_0313.json',
+            # data_root + '/label_data_0531.json',
+            # data_root + '/label_data_0601.json'
+            data_root.rsplit('/', 1)[0] + "/Lane_Annotations/labels/tusimple_atl_del_train.json"            
         ],
         pipeline=train_pipeline,
         test_mode=False,
@@ -200,14 +203,20 @@ data = dict(
     val=dict(
         type=dataset_type,
         data_root=data_root,
-        data_list=[data_root + '/test_baseline.json'],
+        data_list=[
+            # data_root + '/test_baseline.json'
+            data_root.rsplit('/', 1)[0] + "/Lane_Annotations/labels/tusimple_atl_del_val.json"                        
+        ],
         pipeline=val_pipeline,
         test_mode=False,
     ),
     test=dict(
         type=dataset_type,
         data_root=data_root,
-        data_list=[data_root + '/test_label.json'],
+        data_list=[
+            # data_root + '/test_label.json'
+            data_root.rsplit('/', 1)[0] + "/Lane_Annotations/labels/tusimple_atl_del_test.json"            
+        ],
         test_suffix='.jpg',
         pipeline=val_pipeline,
         test_mode=True,

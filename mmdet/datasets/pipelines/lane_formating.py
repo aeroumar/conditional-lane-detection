@@ -316,15 +316,24 @@ class CollectLane(Collect):
 
         output_h = int(results['img_shape'][0])
         output_w = int(results['img_shape'][1])
+        print("output_h: ", output_h)
+        print("output_w: ", output_w)
+        print("self.down_scale: ", self.down_scale)
         mask_h = int(output_h // self.down_scale)
         mask_w = int(output_w // self.down_scale)
+        print("mask_h: ", mask_h)
+        print("mask_w: ", mask_w)
+        print("self.hm_down_scale: ", self.hm_down_scale)
         hm_h = int(output_h // self.hm_down_scale)
         hm_w = int(output_w // self.hm_down_scale)
+        results['hm_shape'] = [hm_h, hm_w]
+        results['mask_shape'] = [mask_h, mask_w]
         ratio_hm_mask = self.down_scale / self.hm_down_scale
 
         # gt init
         gt_hm = np.zeros((1, hm_h, hm_w), np.float32)
         gt_masks = []
+
         # gt heatmap and ins of bank
         # gt_points = results['gt_points']
         # valid_gt = []

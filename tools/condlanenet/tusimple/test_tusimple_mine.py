@@ -19,8 +19,6 @@ from mmdet.utils.general_utils import mkdir, path_join
 from tools.condlanenet.common import tusimple_convert_formal, COLORS
 from tools.condlanenet.post_process import CondLanePostProcessor
 
-import time
-from torch.profiler import profile, record_function, ProfilerActivity
 
 def parse_args():
     parser = argparse.ArgumentParser(description='MMDet test detector')
@@ -31,7 +29,7 @@ def parse_args():
     parser.add_argument('--show', action='store_true')
     parser.add_argument(
         '--show_dst',
-        default='./work_dirs/tusimple/watch',
+        default='/home/harish/Documents/conditional-lane-detection/output',
         help='path to save visualized results.')
     parser.add_argument(
         '--result_dst',
@@ -132,16 +130,13 @@ def single_gpu_test(seg_model,
         mkdir(result_dst)
         dst_dir = os.path.join(result_dst, 'test.json')
         f_dst = open(dst_dir, 'w')
-    times = []
-    # get the start time
     for i, data in enumerate(data_loader):
         with torch.no_grad():
             sub_name = data['img_metas'].data[0][0]['sub_img_name']
             img_shape = data['img_metas'].data[0][0]['img_shape']
             ori_shape = data['img_metas'].data[0][0]['ori_shape']
             h_samples = data['img_metas'].data[0][0]['h_samples']
-            img_info = data['img_metas'].data[0][0]['img_info']      
-            st = time.time()
+            img_info = data['img_metas'].data[0][0]['img_info']
             seeds, _ = seg_model(
                 return_loss=False, rescale=False, thr=hm_thr, **data)
             downscale = data['img_metas'].data[0][0]['down_scale']
@@ -160,7 +155,6 @@ def single_gpu_test(seg_model,
                     run_time=20)
                 json.dump(tusimple_sample, f_dst)
                 print(file=f_dst)
-                print(tusimple_sample)        
 
             filename = data['img_metas'].data[0][0]['filename']
         if show is not None and show:
@@ -172,14 +166,9 @@ def single_gpu_test(seg_model,
             cv2.imwrite(dst_show_dir, img_vis)
             cv2.imwrite(dst_show_gt_dir, img_gt_vis)
 
-        et = time.time()
-        elapsed_time = et - st
-        times.append(elapsed_time)    
-
         batch_size = data['img'].data[0].size(0)
         for _ in range(batch_size):
             prog_bar.update()
-    print("\nAverage elapsed_time: ", round(sum(times) / len(times), 5) , 'seconds')
     if result_dst:
         f_dst.close()
 
